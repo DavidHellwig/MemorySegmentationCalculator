@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <limits.h>
+
 void translate(int VA) {
     const int code = 0x0001;
 
@@ -58,7 +61,28 @@ void translate(int VA) {
 
 
 
-int main() {
-    translate(0xc000);
+void
+translate_str(const char *s) {
+	unsigned long ulval;
+	char *ep;
+
+	errno = 0;
+	ulval = strtoul(s, &ep, 0);
+	if (s[0] == '\0' || *ep != '\0')
+		goto bad;
+	if (errno == ERANGE && ulval == ULONG_MAX)
+		goto bad;
+	if (ulval > INT_MAX)
+		goto bad;
+	translate((int)ulval);
+	return;
+
+bad:
+	fprintf(stderr, "unparseable(%s)\n", s);
+}
+
+int main(int argc, char *argv[]) {
+	for (int i = 1; i < argc; i++)
+		translate_str(argv[i]);
     return 0;
 }
